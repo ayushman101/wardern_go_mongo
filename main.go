@@ -23,8 +23,9 @@ func main(){
 		log.Fatal(err.Error())
 		os.Exit(1)
 	}
+	
 
-	uc:=controllers.NewUserController(c)
+	uc := controllers.NewUserController(c)
 
 	_=uc
 
