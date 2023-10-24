@@ -4,9 +4,10 @@ import(
 	"fmt"
 	"net/http"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/bson"
 	"encoding/json"
 	"context"
-
+	"log"
 	"github.com/ayushman101/warden_go_mongo/models"
 )
 
@@ -18,13 +19,14 @@ func NewUserController(c *mongo.Client) *UserController{
 	return &UserController{c}
 }
 
-func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request) error{
+func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 
 	var user models.User
 
 	err:= json.NewDecoder(r.Body).Decode(&user)
 	if err!=nil {
-		return fmt.Errorf("Error while  decoding json: %w",err)
+		fmt.Println(err)
+		return 
 	}
 
 	collection:= uc.Client.Database("go_test_db").Collection("users")
@@ -32,10 +34,55 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request) erro
 	result,err:= collection.InsertOne(context.Background(),user)
 
 	if err!=nil{
-		return fmt.Errorf("Error while creating user: %w",err)
+		 fmt.Println(err)
+		 return
 	}
 
 	json.NewEncoder(w).Encode(result.InsertedID)
 
-	return nil
+}
+
+func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
+	
+	collection := uc.Client.Database("go_test_db").Collection("users")
+
+
+	cursor,err:= collection.Find(context.Background(),bson.D{{}})  //second argument is a query filer
+								       // empty for returnig all users
+	if err!=nil{
+		fmt.Println("1",err)
+		log.Fatal(err)
+	}
+
+	var users []models.User
+
+	for cursor.Next(context.Background()){
+
+		var user models.User
+
+		err = cursor.Decode(&user)
+
+		if err!=nil{
+			fmt.Println("2")
+	
+			log.Fatal(err)
+		}
+
+		users=append(users,user)
+	}
+
+
+	//close cursor
+	err= cursor.Close(context.Background())
+	
+	if err!=nil{
+		fmt.Println("3")
+	
+		log.Fatal(err)
+		return
+	}
+
+	//return users in json
+	json.NewEncoder(w).Encode(&users)
+
 }

@@ -27,7 +27,8 @@ func main(){
 
 	uc := controllers.NewUserController(c)
 
-	_=uc
+	r.Get("/users/all",uc.Allusers)
+	r.Post("/users/register",uc.CreateUser)
 
 	fmt.Println("Server started at port 8080")
 	log.Fatal(http.ListenAndServe(":8080",r))
@@ -35,7 +36,7 @@ func main(){
 
 func connectToDB() (*mongo.Client, error){
 	
-	clientOptions:= options.Client().ApplyURI("mongodb+srv://<username>:<password>@cluster0.wxxniud.mongodb.net/?retryWrites=true&w=majority")
+	clientOptions:= options.Client().ApplyURI("mongodb+srv://ayushman:av0HnjtyBeYyAFT7@cluster0.wxxniud.mongodb.net/go_test_db?retryWrites=true&w=majority")
 	
 	client,err := mongo.NewClient(clientOptions)
 
