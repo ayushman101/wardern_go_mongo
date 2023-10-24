@@ -10,11 +10,23 @@ import (
 	"os"
 	"context"
 	"time"
+	"github.com/ayushman101/warden_go_mongo/controllers"
 )
 
 func main(){
 
 	r := chi.NewRouter()
+	
+	c,err:= connectToDB()
+
+	if err!=nil{
+		log.Fatal(err.Error())
+		os.Exit(1)
+	}
+
+	uc:=controllers.NewUserController(c)
+
+	_=uc
 
 	fmt.Println("Server started at port 8080")
 	log.Fatal(http.ListenAndServe(":8080",r))
