@@ -46,7 +46,8 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	
 	collection := uc.Client.Database("go_test_db").Collection("users")
 
-
+	
+	//second argument is of type Document which is defined in mongo-bson.
 	cursor,err:= collection.Find(context.Background(),bson.D{{}})  //second argument is a query filer
 								       // empty for returnig all users
 	if err!=nil{
@@ -56,6 +57,7 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 
 	var users []models.User
 
+	//iterate over the cursor to get all the users
 	for cursor.Next(context.Background()){
 
 		var user models.User
@@ -83,6 +85,6 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	}
 
 	//return users in json
-	json.NewEncoder(w).Encode(&users)
+	json.NewEncoder(w).Encode(users)
 
 }
