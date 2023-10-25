@@ -417,6 +417,86 @@ func (uc UserController) PendingSessions(w http.ResponseWriter, r *http.Request)
 
 
 
+//Booking session function
+
+func (uc UserController) BookSession(w http.ResponseWriter, r *http.Request){
+	//Validating the User
+	tokenString := r.Header.Get("Authorization")
+	
+	//fmt.Println("inside All users")
+	id,err:=AuthToken(tokenString)
+	if err!=nil{
+		fmt.Printf("auth:",err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+
+	id1,err:=primitive.ObjectIDFromHex(id)
+	if err!=nil{
+		fmt.Printf("Invalid id: ",err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+
+	var warden models.WardenSession
+	
+	// unmarshalling the body of request
+	bodybytes,err:= ioutil.ReadAll(r.Body)
+
+	if err!=nil {
+		fmt.Println("ioutil:",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return 
+	}
+
+	err=json.Unmarshal(bodybytes, &warden)
+
+	if err!=nil{
+		fmt.Println("Unmarshal:",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//Findig all the sessions
+	collection := uc.Client.Database("go_test_db").Collection("Warden_Sessions")
+	
+
+	if err!=nil{
+		fmt.Println(" finding user :",err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+
+	update:=bson.M{
+		
+		"$set":bson.M{"booker_id":id1, "status": "pending",},
+	}
+
+
+
+	result, err:=collection.UpdateOne(context.Background(),bson.M{"warden_id":warden.WardenId, "status":"available", "session_time":warden.SessionTime},update)
+
+	if err!=nil{
+		fmt.Println("While updating: ",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	 if result.MatchedCount == 0 {
+        fmt.Println("No documents matched the filter criteria.")
+    } else if result.ModifiedCount == 0 {
+        fmt.Println("The document was found, but nothing was updated.")
+    } else {
+        fmt.Println("The document was found and updated.")
+	w.WriteHeader(http.StatusOK)
+    }
+
+
+}
+
 //Authentication Function
 
 func AuthToken(tokenString string) (string,error){

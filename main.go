@@ -33,7 +33,7 @@ func main(){
 	r.Post("/session/create",uc.CreateSession)
 	r.Get("/session/available",uc.ListAvailableSessions)
 	r.Get("/session/pending",uc.PendingSessions)
-
+	r.Put("/session/book",uc.BookSession)
 
 	fmt.Println("Server started at port 8080")
 	log.Fatal(http.ListenAndServe(":8080",r))
