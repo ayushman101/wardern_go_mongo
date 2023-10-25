@@ -335,6 +335,88 @@ func (uc UserController) ListAvailableSessions(w http.ResponseWriter, r *http.Re
 }
 
 
+//Pending Sessions:
+
+func (uc UserController) PendingSessions(w http.ResponseWriter, r *http.Request){
+	//Validating the User
+	tokenString := r.Header.Get("Authorization")
+	
+	//fmt.Println("inside All users")
+	id,err:=AuthToken(tokenString)
+
+	if err!=nil{
+		fmt.Printf("auth:",err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	id1,err:=primitive.ObjectIDFromHex(id)
+	
+	if err!=nil{
+		fmt.Println("invalid id:",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+	
+	//Findig all the sessions
+	collection := uc.Client.Database("go_test_db").Collection("Warden_Sessions")
+	
+
+	if err!=nil{
+		fmt.Println(" finding user :",err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+
+	cursor,err:= collection.Find(context.Background(),bson.M{"warden_id":id1, "status":"pending"})  //second argument is a query filer
+								       // empty for returnig all users
+	if err!=nil{
+		fmt.Println("1",err)
+		//log.Fatal(err)
+		
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	var sessions []models.WardenSession
+
+	//iterate over the cursor to get all the users
+	for cursor.Next(context.Background()){
+
+		var session models.WardenSession
+
+		err = cursor.Decode(&session)
+
+		if err!=nil{
+			fmt.Println(err)
+	
+			//log.Fatal(err)
+			w.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+
+		sessions=append(sessions,session)
+	}
+
+
+	//close cursor
+	err= cursor.Close(context.Background())
+	
+	if err!=nil{
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	//return users in json
+	json.NewEncoder(w).Encode(sessions)
+	
+}
+
+
+
 //Authentication Function
 
 func AuthToken(tokenString string) (string,error){
