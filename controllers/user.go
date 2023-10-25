@@ -96,7 +96,10 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 								       // empty for returnig all users
 	if err!=nil{
 		fmt.Println("1",err)
-		log.Fatal(err)
+		//log.Fatal(err)
+		
+		w.WriteHeader(http.StatusNotFound)
+		return
 	}
 
 	var users []models.User
@@ -109,9 +112,12 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 		err = cursor.Decode(&user)
 
 		if err!=nil{
-			fmt.Println("2")
+			fmt.Println(err)
 	
-			log.Fatal(err)
+			//log.Fatal(err)
+			w.WriteHeader(http.StatusInternalServerError)
+
+			return
 		}
 
 		users=append(users,user)
@@ -122,9 +128,8 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	err= cursor.Close(context.Background())
 	
 	if err!=nil{
-		fmt.Println("3")
-	
-		log.Fatal(err)
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
 		return
 	}
 
@@ -132,9 +137,6 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	json.NewEncoder(w).Encode(users)
 
 }
-
-
-
 
 
 //sign a JWT token
@@ -147,7 +149,8 @@ func signJWT(id interface{}) (string,error){
 	tokenString, err:= token.SignedString([]byte(key))
 
 	if err!=nil{
-		log.Fatal(err)
+		//log.Fatal(err)
+		return "", fmt.Errorf("Error while signing token: %w",err)
 	}
 
 	return tokenString, nil
@@ -168,8 +171,7 @@ func validateJWT(tokenString string, signingKey string) (jwt.MapClaims,error){
 })
 	
 	if err!=nil{
-		fmt.Println("error in parsing token")
-		log.Fatal(err)
+		return nil, fmt.Errorf("invalid token %w",err)
 	}
 
 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid{
