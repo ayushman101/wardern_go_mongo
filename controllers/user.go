@@ -13,6 +13,7 @@ import(
 	//"github.com/dgrijalva/jwt-go"
 	"github.com/golang-jwt/jwt/v5"
 	"strings"
+	"io/ioutil"
 )
 
 
@@ -67,7 +68,6 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	//Validating the User
 	tokenString := r.Header.Get("Authorization")
 
-	//TODO: call authToken func
 
 	err:=AuthToken(tokenString)
 
@@ -126,6 +126,57 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	json.NewEncoder(w).Encode(users)
 
 }
+
+
+//login function
+
+func (uc UserController) LoginUser(w http.ResponseWriter, r *http.Request){
+	
+	var user models.User
+	
+		
+	bodybytes,err:= ioutil.ReadAll(r.Body)
+
+	if err!=nil {
+		fmt.Println("ioutil:",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return 
+	}
+
+	err=json.Unmarshal(bodybytes, &user)
+
+	if err!=nil{
+		fmt.Println("Unmarshal:",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+
+
+	collection:= uc.Client.Database("go_test_db").Collection("users")
+	
+	err= collection.FindOne(context.Background(), bson.M{"email":user.Email}).Decode(&user)
+
+	if err!=nil{
+		fmt.Println(" finding user :",err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	tok,err:= signJWT(user.ID);
+	
+	if err!=nil{
+		 //log.Fatal(err)
+		 fmt.Println("signJwt :",err)
+		 w.WriteHeader(http.StatusInternalServerError)
+		 return 
+	}
+
+	json.NewEncoder(w).Encode(tok)
+
+}
+
+
 
 //Authentication Function
 

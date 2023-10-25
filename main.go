@@ -26,7 +26,8 @@ func main(){
 	
 
 	uc := controllers.NewUserController(c)
-
+	
+	r.Get("/users/login",uc.LoginUser)
 	r.Get("/users/all",uc.Allusers)
 	r.Post("/users/register",uc.CreateUser)
 
