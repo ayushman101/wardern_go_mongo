@@ -24,10 +24,13 @@ type UserController struct{
 	Client *mongo.Client
 }
 
+
 func NewUserController(c *mongo.Client) *UserController{
 	return &UserController{c}
 }
 
+
+//Register a User
 func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 
 
@@ -58,6 +61,8 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 
 }
 
+
+//List All users
 func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 
 	//Validating the User
@@ -84,8 +89,6 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
     	}
 
 	fmt.Println(claims)
-
-
 
 
 	collection := uc.Client.Database("go_test_db").Collection("users")
@@ -137,6 +140,8 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	json.NewEncoder(w).Encode(users)
 
 }
+
+
 
 
 //sign a JWT token
