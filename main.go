@@ -30,6 +30,7 @@ func main(){
 	r.Get("/users/login",uc.LoginUser)
 	r.Get("/users/all",uc.Allusers)
 	r.Post("/users/register",uc.CreateUser)
+	r.Get("/session/create",uc.CreateSession)
 
 	fmt.Println("Server started at port 8080")
 	log.Fatal(http.ListenAndServe(":8080",r))

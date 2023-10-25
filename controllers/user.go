@@ -1,10 +1,12 @@
 package controllers
 
 import(
+	"time"
 	"errors"
 	"fmt"
 	"net/http"
 	"go.mongodb.org/mongo-driver/mongo"
+	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
 	"encoding/json"
@@ -74,7 +76,7 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	tokenString := r.Header.Get("Authorization")
 	
 	fmt.Println("inside All users")
-	err:=AuthToken(tokenString)
+	_,err:=AuthToken(tokenString)
 
 	if err!=nil{
 		fmt.Printf("auth:",err)
@@ -183,33 +185,81 @@ func (uc UserController) LoginUser(w http.ResponseWriter, r *http.Request){
 
 
 
+func (uc UserController) CreateSession(w http.ResponseWriter, r *http.Request){
+	tokenString := r.Header.Get("Authorization")
+	
+	fmt.Println("inside All users")
+	
+	id,err:=AuthToken(tokenString)
+	
+	if err!=nil{
+		fmt.Println("session: error while auth",err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	//converting string type to valid bson ObjectID
+	id1,err:=primitive.ObjectIDFromHex(id)
+
+	session:= models.WardenSession{
+		ID: primitive.NewObjectID(),
+		WardenId: id1,
+		Status: "available",
+		SessionTime: primitive.NewDateTimeFromTime(time.Now()),
+		ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2)),
+	}
+
+	collection:= uc.Client.Database("go_test_db").Collection("Warden_Sessions")
+
+	collection.Indexes().CreateOne(context.Background(), mongo.IndexModel{
+        	Keys: bson.M{
+            		"expiresAt": 1,
+        	},
+        	Options: options.Index().SetExpireAfterSeconds(7200),
+    	})
+
+	result,err:= collection.InsertOne(context.Background(),session)
+
+	if err!=nil{
+		 fmt.Println(err)
+		 w.WriteHeader(http.StatusBadRequest)
+		 return
+	}
+	
+	json.NewEncoder(w).Encode(result.InsertedID)
+
+}
+
+
+
+
 //Authentication Function
 
-func AuthToken(tokenString string) error{
+func AuthToken(tokenString string) (string,error){
 
 	ss := strings.Split(tokenString," ");
 
 	if ss[0]!="Bearer"{
-		return errors.New("No Bearer")
+		return "",errors.New("No Bearer")
 	}
 
 	tokenString=ss[1]
 
     	if tokenString == "" {
         	//w.WriteHeader(http.StatusUnauthorized)
-        	return errors.New("No token")
+        	return "",errors.New("No token")
 	}
 
     	// Validate the JWT token.
     	claims, err := validateJWT(tokenString, key)
     	if err != nil {
         	//w.WriteHeader(http.StatusUnauthorized)
-		return fmt.Errorf("Invalid token: %w",err)
+		return "",fmt.Errorf("Invalid token: %w",err)
     	}
 
-	fmt.Println(claims)
+	fmt.Println(claims["id"])
 
-	return nil
+	return fmt.Sprintf("%v",claims["id"]),nil
 
 }
 
