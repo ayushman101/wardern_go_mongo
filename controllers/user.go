@@ -1,6 +1,7 @@
 package controllers
 
 import(
+	"errors"
 	"fmt"
 	"net/http"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -11,6 +12,7 @@ import(
 	"github.com/ayushman101/warden_go_mongo/models"
 	//"github.com/dgrijalva/jwt-go"
 	"github.com/golang-jwt/jwt/v5"
+	"strings"
 )
 
 
@@ -29,27 +31,9 @@ func NewUserController(c *mongo.Client) *UserController{
 func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 
 
-	//Validating the User
-	tokenString := r.Header.Get("Authorization")
-
-    	if tokenString == "" {
-        	w.WriteHeader(http.StatusUnauthorized)
-        	return
-	}
-
-    	// Validate the JWT token.
-    	claims, err := validateJWT(tokenString, key)
-    	if err != nil {
-        	w.WriteHeader(http.StatusUnauthorized)
-        	return
-    	}
-
-	fmt.Println(claims)
-
-
 	var user models.User
 
-	err = json.NewDecoder(r.Body).Decode(&user)
+	err:= json.NewDecoder(r.Body).Decode(&user)
 	if err!=nil {
 		fmt.Println(err)
 		return 
@@ -75,7 +59,35 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 }
 
 func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
-	
+
+	//Validating the User
+	tokenString := r.Header.Get("Authorization")
+
+	ss := strings.Split(tokenString," ");
+
+	if ss[0]!="Bearer"{
+		log.Fatal(errors.New("No Bearer"))
+	}
+
+	tokenString=ss[1]
+
+    	if tokenString == "" {
+        	w.WriteHeader(http.StatusUnauthorized)
+        	return
+	}
+
+    	// Validate the JWT token.
+    	claims, err := validateJWT(tokenString, key)
+    	if err != nil {
+        	w.WriteHeader(http.StatusUnauthorized)
+        	return
+    	}
+
+	fmt.Println(claims)
+
+
+
+
 	collection := uc.Client.Database("go_test_db").Collection("users")
 
 	
@@ -152,7 +164,7 @@ func validateJWT(tokenString string, signingKey string) (jwt.MapClaims,error){
 	}
 
 	// signingKey is a []byte containing your secret, e.g. []byte("my_secret_key")
-	return signingKey, nil
+	return []byte(signingKey), nil
 })
 	
 	if err!=nil{
