@@ -231,6 +231,108 @@ func (uc UserController) CreateSession(w http.ResponseWriter, r *http.Request){
 }
 
 
+//List Available Sessions of a Warden 
+func (uc UserController) ListAvailableSessions(w http.ResponseWriter, r *http.Request){
+	//Validating the User
+	tokenString := r.Header.Get("Authorization")
+	
+	//fmt.Println("inside All users")
+	_,err:=AuthToken(tokenString)
+
+	if err!=nil{
+		fmt.Printf("auth:",err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
+	}
+
+	var user models.User
+	
+	// unmarshalling the body of request
+	bodybytes,err:= ioutil.ReadAll(r.Body)
+
+	if err!=nil {
+		fmt.Println("ioutil:",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return 
+	}
+
+	err=json.Unmarshal(bodybytes, &user)
+
+	if err!=nil{
+		fmt.Println("Unmarshal:",err)
+		w.WriteHeader(http.StatusBadRequest)
+		return
+	}
+
+	//Finding the name of the Warden	
+	collection:= uc.Client.Database("go_test_db").Collection("users")
+	
+	err= collection.FindOne(context.Background(), bson.M{"_id":user.ID}).Decode(&user)
+	
+	if err!=nil{
+		fmt.Println(" finding user :",err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+
+
+	//Findig all the sessions
+	collection = uc.Client.Database("go_test_db").Collection("Warden_Sessions")
+	
+
+	if err!=nil{
+		fmt.Println(" finding user :",err)
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+
+	cursor,err:= collection.Find(context.Background(),bson.M{"warden_id":user.ID, "status":"available"})  //second argument is a query filer
+								       // empty for returnig all users
+	if err!=nil{
+		fmt.Println("1",err)
+		//log.Fatal(err)
+		
+		w.WriteHeader(http.StatusNotFound)
+		return
+	}
+
+	var sessions []models.WardenSession
+
+	//iterate over the cursor to get all the users
+	for cursor.Next(context.Background()){
+
+		var session models.WardenSession
+
+		err = cursor.Decode(&session)
+
+		if err!=nil{
+			fmt.Println(err)
+	
+			//log.Fatal(err)
+			w.WriteHeader(http.StatusInternalServerError)
+
+			return
+		}
+
+		sessions=append(sessions,session)
+	}
+
+
+	//close cursor
+	err= cursor.Close(context.Background())
+	
+	if err!=nil{
+		fmt.Println(err)
+		w.WriteHeader(http.StatusInternalServerError)
+		return
+	}
+
+	//return users in json
+	json.NewEncoder(w).Encode(sessions)
+
+}
 
 
 //Authentication Function
