@@ -9,8 +9,14 @@ import(
 	"context"
 	"log"
 	"github.com/ayushman101/warden_go_mongo/models"
+	//"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 )
 
+
+
+
+//for user queries
 type UserController struct{
 	Client *mongo.Client
 }
@@ -38,7 +44,13 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 		 return
 	}
 
-	json.NewEncoder(w).Encode(result.InsertedID)
+	tok,err:= signJWT(result.InsertedID);
+	
+	if err!=nil{
+		 log.Fatal(err)
+	}
+
+	json.NewEncoder(w).Encode(tok)
 
 }
 
@@ -88,3 +100,24 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	json.NewEncoder(w).Encode(users)
 
 }
+
+
+//sign a JWT token
+
+func signJWT(id interface{}) (string,error){
+	token:=jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
+		"id":id,
+	})
+
+	tokenString, err:= token.SignedString([]byte("fejofjeaje335931jfjj3o"))
+
+	if err!=nil{
+		log.Fatal(err)
+	}
+
+	return tokenString, nil
+}
+
+
+
+
