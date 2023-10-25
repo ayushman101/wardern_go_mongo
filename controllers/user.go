@@ -64,32 +64,18 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 
 //List All users
 func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
-
 	//Validating the User
 	tokenString := r.Header.Get("Authorization")
 
-	ss := strings.Split(tokenString," ");
+	//TODO: call authToken func
 
-	if ss[0]!="Bearer"{
-		log.Fatal(errors.New("No Bearer"))
+	err:=AuthToken(tokenString)
+
+	if err!=nil{
+		fmt.Printf("auth:",err)
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	}
-
-	tokenString=ss[1]
-
-    	if tokenString == "" {
-        	w.WriteHeader(http.StatusUnauthorized)
-        	return
-	}
-
-    	// Validate the JWT token.
-    	claims, err := validateJWT(tokenString, key)
-    	if err != nil {
-        	w.WriteHeader(http.StatusUnauthorized)
-        	return
-    	}
-
-	fmt.Println(claims)
-
 
 	collection := uc.Client.Database("go_test_db").Collection("users")
 
@@ -141,7 +127,35 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 
 }
 
+//Authentication Function
 
+func AuthToken(tokenString string) error{
+
+	ss := strings.Split(tokenString," ");
+
+	if ss[0]!="Bearer"{
+		return errors.New("No Bearer")
+	}
+
+	tokenString=ss[1]
+
+    	if tokenString == "" {
+        	//w.WriteHeader(http.StatusUnauthorized)
+        	return errors.New("No token")
+	}
+
+    	// Validate the JWT token.
+    	claims, err := validateJWT(tokenString, key)
+    	if err != nil {
+        	//w.WriteHeader(http.StatusUnauthorized)
+		return fmt.Errorf("Invalid token: %w",err)
+    	}
+
+	fmt.Println(claims)
+
+	return nil
+
+}
 
 
 //sign a JWT token
