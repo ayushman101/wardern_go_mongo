@@ -14,6 +14,7 @@ import(
 )
 
 
+var key string ="fejofjeaje335931jfjj3o"
 
 
 //for user queries
@@ -27,9 +28,28 @@ func NewUserController(c *mongo.Client) *UserController{
 
 func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 
+
+	//Validating the User
+	tokenString := r.Header.Get("Authorization")
+
+    	if tokenString == "" {
+        	w.WriteHeader(http.StatusUnauthorized)
+        	return
+	}
+
+    	// Validate the JWT token.
+    	claims, err := validateJWT(tokenString, key)
+    	if err != nil {
+        	w.WriteHeader(http.StatusUnauthorized)
+        	return
+    	}
+
+	fmt.Println(claims)
+
+
 	var user models.User
 
-	err:= json.NewDecoder(r.Body).Decode(&user)
+	err = json.NewDecoder(r.Body).Decode(&user)
 	if err!=nil {
 		fmt.Println(err)
 		return 
@@ -102,6 +122,9 @@ func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 }
 
 
+
+
+
 //sign a JWT token
 
 func signJWT(id interface{}) (string,error){
@@ -109,7 +132,7 @@ func signJWT(id interface{}) (string,error){
 		"id":id,
 	})
 
-	tokenString, err:= token.SignedString([]byte("fejofjeaje335931jfjj3o"))
+	tokenString, err:= token.SignedString([]byte(key))
 
 	if err!=nil{
 		log.Fatal(err)
@@ -118,6 +141,31 @@ func signJWT(id interface{}) (string,error){
 	return tokenString, nil
 }
 
+//Validate a token
+
+func validateJWT(tokenString string, signingKey string) (jwt.MapClaims,error){
+
+	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
+	// Don't forget to validate the alg is what you expect:
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
+	}
+
+	// signingKey is a []byte containing your secret, e.g. []byte("my_secret_key")
+	return signingKey, nil
+})
+	
+	if err!=nil{
+		fmt.Println("error in parsing token")
+		log.Fatal(err)
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid{
+    		return claims, nil
+	}
+
+	return nil, fmt.Errorf("invalid token")
+}
 
 
 
