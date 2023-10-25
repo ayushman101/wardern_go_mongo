@@ -54,6 +54,8 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 		 fmt.Println(err)
 		 return
 	}
+	
+
 
 	tok,err:= signJWT(result.InsertedID);
 	
@@ -70,8 +72,8 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 func (uc UserController) Allusers(w http.ResponseWriter, r *http.Request){
 	//Validating the User
 	tokenString := r.Header.Get("Authorization")
-
-
+	
+	fmt.Println("inside All users")
 	err:=AuthToken(tokenString)
 
 	if err!=nil{
