@@ -6,6 +6,7 @@ import(
 	"net/http"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"encoding/json"
 	"context"
 	"log"
@@ -42,6 +43,8 @@ func (uc UserController) CreateUser(w http.ResponseWriter, r *http.Request){
 		fmt.Println(err)
 		return 
 	}
+	
+	user.ID=primitive.NewObjectID()
 
 	collection:= uc.Client.Database("go_test_db").Collection("users")
 
