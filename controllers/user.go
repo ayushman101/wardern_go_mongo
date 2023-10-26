@@ -162,7 +162,7 @@ func (uc UserController) LoginUser(w http.ResponseWriter, r *http.Request){
 
 	collection:= uc.Client.Database("go_test_db").Collection("users")
 	
-	err= collection.FindOne(context.Background(), bson.M{"email":user.Email}).Decode(&user)
+	err= collection.FindOne(context.Background(), bson.M{"_id":user.ID,"email":user.Email,"password":user.Password}).Decode(&user)
 
 	if err!=nil{
 		fmt.Println(" finding user :",err)
@@ -206,7 +206,7 @@ func (uc UserController) CreateSession(w http.ResponseWriter, r *http.Request){
 		WardenId: id1,
 		Status: "available",
 		SessionTime: primitive.NewDateTimeFromTime(time.Now()),
-		ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Hour * 2)),
+		ExpiresAt: primitive.NewDateTimeFromTime(time.Now().Add(time.Second * 30)),
 	}
 
 	collection:= uc.Client.Database("go_test_db").Collection("Warden_Sessions")
@@ -215,7 +215,7 @@ func (uc UserController) CreateSession(w http.ResponseWriter, r *http.Request){
         	Keys: bson.M{
             		"expiresAt": 1,
         	},
-        	Options: options.Index().SetExpireAfterSeconds(7200),
+        	Options: options.Index().SetExpireAfterSeconds(0),
     	})
 
 	result,err:= collection.InsertOne(context.Background(),session)
